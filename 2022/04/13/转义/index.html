@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+
+<html lang="zh_TW">
+
+<head>
+    
+    <title>转义 - neko莊園</title>
+    <meta charset="UTF-8">
+    <meta name="keywords" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+    
+    
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <meta name="description" content="转义  由于学习JavaScript时是依照实际案例来学习的，因此遗漏了某些少用到的方面。   最近在实现一个需求时，发现转义符真的超好用！ ！下面是需求详情：   -&gt;需要向伺服器内存入html片段，并且这些html片段有行内样式，如下图   12345&amp;#123;	&quot;title&quot;:&quot;SPRING&quot;,	&quot;honor&quot;:&quot;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="转义">
+<meta property="og:url" content="https://www.1205.moe/2022/04/13/%E8%BD%AC%E4%B9%89/index.html">
+<meta property="og:site_name" content="neko莊園">
+<meta property="og:description" content="转义  由于学习JavaScript时是依照实际案例来学习的，因此遗漏了某些少用到的方面。   最近在实现一个需求时，发现转义符真的超好用！ ！下面是需求详情：   -&gt;需要向伺服器内存入html片段，并且这些html片段有行内样式，如下图   12345&amp;#123;	&quot;title&quot;:&quot;SPRING&quot;,	&quot;honor&quot;:&quot;">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/163214869-8cfed491-8e22-4672-ace0-5ab1d1b6fa8f.png">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/163215470-ab5d1cec-c737-4754-89cc-1c09c613fc40.png">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/163215488-937da462-5d40-430f-b37f-757bb1c25fe6.png">
+<meta property="article:published_time" content="2022-04-13T14:24:00.000Z">
+<meta property="article:modified_time" content="2022-10-17T08:12:33.295Z">
+<meta property="article:author" content="NickXu">
+<meta property="article:tag" content="Nodejs">
+<meta property="article:tag" content="学习记录">
+<meta property="article:tag" content="数据库">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-images.githubusercontent.com/42164227/163214869-8cfed491-8e22-4672-ace0-5ab1d1b6fa8f.png">
+    <link rel="stylesheet" href="/lib/jquery.fancybox.min.css?v=1665996609909">
+    
+    <link rel="stylesheet" href="/lib/mdui_043tiny/css/mdui.css?v=1665996609909">
+    <link rel="stylesheet" href="/lib/iconfont/iconfont.css?v=1665996609909">
+    <link rel="stylesheet" href="/css/style.css?v=1665996609909">
+     
+    
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+<body class="mdui-drawer-body-left">
+    
+    <div id="nexmoe-background">
+        <div class="nexmoe-bg" style="background-image: url(https://www.dmoe.cc/random.php)"></div>
+        <div class="mdui-appbar mdui-shadow-0">
+            <div class="mdui-toolbar">
+                <a mdui-drawer="{target: '#drawer', swipe: true}" title="menu" class="mdui-btn mdui-btn-icon mdui-ripple"><i class="mdui-icon nexmoefont icon-menu"></i></a>
+                <div class="mdui-toolbar-spacer"></div>
+                <!--<a href="javascript:;" class="mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">search</i></a>-->
+                <a href="/" title="NickXu" class="mdui-btn mdui-btn-icon"><img src="https://user-images.githubusercontent.com/42164227/154855857-80db9178-d35f-4743-8e4b-63e6305c3317.jpg" alt="NickXu"></a>
+            </div>
+        </div>
+    </div>
+    <div id="nexmoe-header">
+        <div class="nexmoe-drawer mdui-drawer" id="drawer">
+    <div class="nexmoe-avatar mdui-ripple">
+        <a href="/" title="NickXu">
+            <img src="https://user-images.githubusercontent.com/42164227/154855857-80db9178-d35f-4743-8e4b-63e6305c3317.jpg" alt="NickXu" alt="NickXu">
+        </a>
+    </div>
+    <div class="nexmoe-count">
+        <div><span>Articles</span>5</div>
+        <div><span>Tags</span>10</div>
+        <div><span>Categories</span>3</div>
+    </div>
+    <div class="nexmoe-list mdui-list" mdui-collapse="{accordion: true}">
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/" title="回到首页">
+            <i class="mdui-list-item-icon nexmoefont icon-home"></i>
+            <div class="mdui-list-item-content">
+                回到首页
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/archive.html" title="文章归档">
+            <i class="mdui-list-item-icon nexmoefont icon-container"></i>
+            <div class="mdui-list-item-content">
+                文章归档
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/about.html" title="关于博客">
+            <i class="mdui-list-item-icon nexmoefont icon-info-circle"></i>
+            <div class="mdui-list-item-content">
+                关于博客
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/PY.html" title="我的朋友">
+            <i class="mdui-list-item-icon nexmoefont icon-unorderedlist"></i>
+            <div class="mdui-list-item-content">
+                我的朋友
+            </div>
+        </a>
+        
+    </div>
+    <aside id="nexmoe-sidebar">
+    
+    <div class="nexmoe-widget-wrap">
+    <div class="nexmoe-widget nexmoe-search">
+        
+            <form id="search_form">
+                <label><input class="st-default-search-input" id="search_value" name="q" type="search" placeholder="Search" style="
+                    font-size: 15px !important;
+                    height: 56px !important;
+                    background-image: none;
+                "></label>
+            </form>
+         
+    </div>
+</div>
+    
+    <div class="nexmoe-widget-wrap">
+    <div class="nexmoe-widget nexmoe-social">
+        <a class="mdui-ripple" href="https://github.com/wenzi7777" target="_blank" mdui-tooltip="{content: 'GitHub'}" style="color: rgb(25, 23, 23);background-color: rgba(25, 23, 23, .15);">
+            <i class="nexmoefont icon-github"></i>
+        </a>
+    </div>
+</div>
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Categories</h3>
+    <div class="nexmoe-widget">
+
+      <ul class="category-list">
+
+        
+
+
+        
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/前端/">前端</a>
+          <span class="category-list-count">2</span>
+        </li>
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/后端/">后端</a>
+          <span class="category-list-count">2</span>
+        </li>
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/和编程没关系的事情/">和编程没关系的事情</a>
+          <span class="category-list-count">1</span>
+        </li>
+
+        
+      </ul>
+
+    </div>
+  </div>
+
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <div id="randomtagcloud" class="nexmoe-widget tagcloud nexmoe-rainbow">
+      <a href="/tags/Electron/" style="font-size: 10px;">Electron</a> <a href="/tags/Node-js/" style="font-size: 10px;">Node.js</a> <a href="/tags/Nodejs/" style="font-size: 10px;">Nodejs</a> <a href="/tags/Proxy/" style="font-size: 10px;">Proxy</a> <a href="/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/tags/%E4%BD%BF%E7%94%A8Cloudflare/" style="font-size: 10px;">使用Cloudflare</a> <a href="/tags/%E5%9B%BD%E9%99%85%E5%8C%96/" style="font-size: 10px;">国际化</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">学习记录</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 10px;">数据库</a> <a href="/tags/%E9%AB%98%E7%A7%91%E6%8A%80/" style="font-size: 10px;">高科技</a>
+    </div>
+    
+  </div>
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Archive</h3>
+    <div class="nexmoe-widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/">2022</a><span class="archive-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Recent Posts</h3>
+    <div class="nexmoe-widget">
+      <ul>
+        
+          <li>
+            <a href="/2022/10/17/blog%E5%A4%9A%E8%AF%AD%E8%A8%80%E8%AE%A1%E5%88%92/">blog多语言计划</a>
+          </li>
+        
+          <li>
+            <a href="/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/">使用Cloudflare Worker来进行Firebase代理</a>
+          </li>
+        
+          <li>
+            <a href="/2022/05/01/%E5%9C%A8Vue%E7%A8%8B%E5%BA%8F%E4%B8%AD%E4%BD%BF%E7%94%A8Electron%E6%A1%86%E6%9E%B6/">在Vue程式中使用Electron框架</a>
+          </li>
+        
+          <li>
+            <a href="/2022/04/13/%E8%BD%AC%E4%B9%89/">转义</a>
+          </li>
+        
+          <li>
+            <a href="/2022/02/21/%E7%94%A8css%E5%AE%9E%E7%8E%B0%E7%BD%91%E9%A1%B5%E9%AB%98%E6%96%AF%E6%A8%A1%E7%B3%8A%E8%83%8C%E6%99%AF/">用css实现网页高斯模糊特效</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+    
+</aside>
+    <div class="nexmoe-copyright">
+        &copy; 2022 NickXu
+        Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+        & <a href="https://github.com/theme-nexmoe/hexo-theme-nexmoe" target="_blank">Nexmoe</a>
+        <br>
+    </div>
+</div><!-- .nexmoe-drawer -->
+    </div>
+    <div id="nexmoe-content">
+        <div class="nexmoe-primary">
+            <div class="nexmoe-post">
+
+  <article>
+      
+          <div class="nexmoe-post-cover" style="padding-bottom: 66.66666666666666%;"> 
+              <img data-src="https://www.dmoe.cc/random.php" data-sizes="auto" alt="转义" class="lazyload">
+              <h1>转义</h1>
+          </div>
+      
+      
+      <div class="nexmoe-post-meta nexmoe-rainbow" style="margin:10px 0!important;">
+    <a><i class="nexmoefont icon-calendar-fill"></i>2022年04月13日</a>
+</div>
+
+      
+
+      <h2 id="转义"><a href="#转义" class="headerlink" title="转义"></a>转义</h2><br />
+
+<p><strong>由于学习JavaScript时是依照实际案例来学习的，因此遗漏了某些少用到的方面。</strong></p>
+<br />
+
+<p><em>最近在实现一个需求时，发现转义符真的超好用！ ！下面是需求详情：</em></p>
+<br />
+
+<p><em>-&gt;需要向伺服器内存入html片段，并且这些html片段有行内样式，如下图</em></p>
+<br />
+
+<figure class="highlight json"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="punctuation">&#123;</span></span><br><span class="line">	<span class="attr">&quot;title&quot;</span><span class="punctuation">:</span><span class="string">&quot;SPRING&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;honor&quot;</span><span class="punctuation">:</span><span class="string">&quot;&lt;span style=&#x27;color: blue;&#x27;&gt;SPRING&lt;/span&gt;&quot;</span><span class="punctuation">,</span></span><br><span class="line">	<span class="attr">&quot;description&quot;</span><span class="punctuation">:</span><span class="string">&quot;代表您加入了SPRING计画&quot;</span></span><br><span class="line"><span class="punctuation">&#125;</span></span><br></pre></td></tr></table></figure>
+
+<br />
+
+<h3 id="发现问题🤔：在这里单引号，双引号都用上了，那么要如何才能在SQL语句内拼上这段字符串呢？"><a href="#发现问题🤔：在这里单引号，双引号都用上了，那么要如何才能在SQL语句内拼上这段字符串呢？" class="headerlink" title="发现问题🤔：在这里单引号，双引号都用上了，那么要如何才能在SQL语句内拼上这段字符串呢？"></a>发现问题🤔：在这里单引号，双引号都用上了，那么要如何才能在SQL语句内拼上这段字符串呢？</h3><br />
+
+<p><strong>超级重要！ ！ ！ -&gt; SQL语句需要被一对引号括起来。</strong></p>
+<br />
+
+<p><em>有的小猫咪可能就会说了，用模板字符串(``)不就可以了吗？</em></p>
+<br />
+
+<p><strong>其实是不行的，请看这张图</strong><br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/163214869-8cfed491-8e22-4672-ace0-5ab1d1b6fa8f.png" alt="用模板字符串" class="lazyload"></p>
+<br />
+
+<p><strong>这里使用单引号、双引号都会报错</strong><br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/163215470-ab5d1cec-c737-4754-89cc-1c09c613fc40.png" alt="双引号" class="lazyload"></p>
+<p><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/163215488-937da462-5d40-430f-b37f-757bb1c25fe6.png" alt="单引号" class="lazyload"></p>
+<br />
+
+<h3 id="gt-所以这里的解决方案就是：转义符号"><a href="#gt-所以这里的解决方案就是：转义符号" class="headerlink" title="-&gt; 所以这里的解决方案就是：转义符号"></a>-&gt; 所以这里的解决方案就是：转义符号</h3><p><strong>给出正确的SQL语句</strong></p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">UPDATE</span> items <span class="keyword">SET</span> itemValue <span class="operator">=</span><span class="string">&#x27;&#123;&quot;title&quot;:&quot;SPRING&quot;,&quot;honor&quot;:&quot;&lt;span style=\&#x27;</span>color: blue;\<span class="string">&#x27;&gt;SPRING&lt;/span&gt;&quot;,&quot;description&quot;:&quot;代表您加入了SPRING计画&quot;&#125;&#x27;</span> <span class="keyword">WHERE</span> itemKey<span class="operator">=</span>&quot;UID1*ActivatedHonor&quot;</span><br></pre></td></tr></table></figure>
+
+<h3 id="成功！"><a href="#成功！" class="headerlink" title="成功！"></a>成功！</h3>
+  </article>
+
+  
+      
+    <div class="nexmoe-post-copyright">
+        <strong>Author：</strong>NickXu<br>
+        <strong>Link：</strong><a href="https://www.1205.moe/2022/04/13/%E8%BD%AC%E4%B9%89/" title="https:&#x2F;&#x2F;www.1205.moe&#x2F;2022&#x2F;04&#x2F;13&#x2F;%E8%BD%AC%E4%B9%89&#x2F;" target="_blank" rel="noopener">https:&#x2F;&#x2F;www.1205.moe&#x2F;2022&#x2F;04&#x2F;13&#x2F;%E8%BD%AC%E4%B9%89&#x2F;</a><br>
+        
+            <strong>版权声明：</strong>本文采用 <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/cn/deed.zh" target="_blank">CC BY-NC-SA 3.0 CN</a> 协议进行许可
+        
+    </div>
+
+
+  
+  
+  <div class="nexmoe-post-meta nexmoe-rainbow">
+    
+        <a class="nexmoefont icon-appstore-fill -link" href="/categories/%E5%90%8E%E7%AB%AF/">后端</a>
+    
+    
+        <a class="nexmoefont icon-tag-fill -none-link" href="/tags/Nodejs/" rel="tag">Nodejs</a> <a class="nexmoefont icon-tag-fill -none-link" href="/tags/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/" rel="tag">学习记录</a> <a class="nexmoefont icon-tag-fill -none-link" href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" rel="tag">数据库</a>
+    
+</div>
+
+  
+      <div class="nexmoe-post-footer">
+          <section class="nexmoe-comment">
+    <script id="dsq-count-scr" src="https://nekoblog-1.disqus.com/count.js" async></script>
+<div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+        this.page.url = 'https://www.1205.moe/2022/04/13/%E8%BD%AC%E4%B9%89/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'https://www.1205.moe/2022/04/13/%E8%BD%AC%E4%B9%89/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+</script>
+<script id="disqus-thread-script">
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document;
+        var s = d.createElement('script');
+        s.src = '//nekoblog-1.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', + new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+
+</section>
+      </div>
+  
+</div>
+            <div class="nexmoe-post-right">
+              <div class="nexmoe-fixed">
+                  <div class="nexmoe-tool"> 
+                    
+                      
+                    
+                      <a href="#nexmoe-content" class="toc-link" aria-label="回到頂部" title="top"><button class="mdui-fab mdui-ripple"><i class="nexmoefont icon-caret-top"></i></button></a>
+                  </div>
+              </div>
+            </div>
+        </div>
+    </div>
+     
+    <div id="nexmoe-search-space">
+        <div class="search-container">
+            <div class="search-header">
+                <div class="search-input-container">
+                    <input class="search-input" type="text" placeholder="Search" oninput="sinput();">
+                </div>
+                <a class="search-close" onclick="sclose();">×</a>
+            </div>
+            <div class="search-body"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/combine/npm/lazysizes@5.1.0/lazysizes.min.js,npm/mdui@0.4.3/dist/js/mdui.min.js?v=1"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+
+ 
+
+<script async src="/js/app.js?v=1665996609909"></script>
+
+
+	<script async src="/js/search.js?v=1665996609909"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js"></script>
+<script>
+	$(".justified-gallery").justifiedGallery({
+		rowHeight: 160,
+		margins: 10,
+	});
+</script>
+
+
+    
+    <!-- Google Analytics -->
+<script>
+    window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', '3259021090', 'auto');
+    ga('send', 'pageview');
+</script>
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+
+
+
+
+
+
+</body>
+
+</html>

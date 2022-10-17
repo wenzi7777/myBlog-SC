@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+
+<html lang="zh_TW">
+
+<head>
+    
+    <title>使用Cloudflare Worker来进行Firebase代理 - neko莊園</title>
+    <meta charset="UTF-8">
+    <meta name="keywords" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5">
+    
+    
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon" />
+    <meta name="description" content="使用Cloudflare Worker代理Firebase链接  最近有一个专案使用Firebase来存储用户们上传的图片档，但是Firebase在中国大陆是被防火长城阻挡的，因此中国大陆的使用者无法查看图片    于是，就有了本篇Blog  这篇Blog会教你如何使用Cloudflare提供的免费的Worker服务，来建立一个Proxy，然后无论来自哪个地方的人都可以通过代理的连结正常访问Fir">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用Cloudflare Worker来进行Firebase代理">
+<meta property="og:url" content="https://www.1205.moe/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/index.html">
+<meta property="og:site_name" content="neko莊園">
+<meta property="og:description" content="使用Cloudflare Worker代理Firebase链接  最近有一个专案使用Firebase来存储用户们上传的图片档，但是Firebase在中国大陆是被防火长城阻挡的，因此中国大陆的使用者无法查看图片    于是，就有了本篇Blog  这篇Blog会教你如何使用Cloudflare提供的免费的Worker服务，来建立一个Proxy，然后无论来自哪个地方的人都可以通过代理的连结正常访问Fir">
+<meta property="og:locale" content="zh_TW">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/179679279-61076fd1-1206-4ed7-bf91-f96dc326e12b.png">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/179679864-79ea1846-376e-4a2f-9878-a7a21bbb7e28.png">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/179680200-7d7d6531-712a-48de-b425-168057b3233e.png">
+<meta property="og:image" content="https://user-images.githubusercontent.com/42164227/179680931-c8ec70c4-ee21-46a8-82c2-f30fe11473c4.png">
+<meta property="article:published_time" content="2022-07-19T06:05:30.000Z">
+<meta property="article:modified_time" content="2022-10-17T08:10:54.003Z">
+<meta property="article:author" content="NickXu">
+<meta property="article:tag" content="Node.js">
+<meta property="article:tag" content="使用Cloudflare">
+<meta property="article:tag" content="Proxy">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://user-images.githubusercontent.com/42164227/179679279-61076fd1-1206-4ed7-bf91-f96dc326e12b.png">
+    <link rel="stylesheet" href="/lib/jquery.fancybox.min.css?v=1665996609905">
+    
+    <link rel="stylesheet" href="/lib/mdui_043tiny/css/mdui.css?v=1665996609905">
+    <link rel="stylesheet" href="/lib/iconfont/iconfont.css?v=1665996609905">
+    <link rel="stylesheet" href="/css/style.css?v=1665996609905">
+     
+    
+<meta name="generator" content="Hexo 6.0.0"></head>
+
+<body class="mdui-drawer-body-left">
+    
+    <div id="nexmoe-background">
+        <div class="nexmoe-bg" style="background-image: url(https://www.dmoe.cc/random.php)"></div>
+        <div class="mdui-appbar mdui-shadow-0">
+            <div class="mdui-toolbar">
+                <a mdui-drawer="{target: '#drawer', swipe: true}" title="menu" class="mdui-btn mdui-btn-icon mdui-ripple"><i class="mdui-icon nexmoefont icon-menu"></i></a>
+                <div class="mdui-toolbar-spacer"></div>
+                <!--<a href="javascript:;" class="mdui-btn mdui-btn-icon"><i class="mdui-icon material-icons">search</i></a>-->
+                <a href="/" title="NickXu" class="mdui-btn mdui-btn-icon"><img src="https://user-images.githubusercontent.com/42164227/154855857-80db9178-d35f-4743-8e4b-63e6305c3317.jpg" alt="NickXu"></a>
+            </div>
+        </div>
+    </div>
+    <div id="nexmoe-header">
+        <div class="nexmoe-drawer mdui-drawer" id="drawer">
+    <div class="nexmoe-avatar mdui-ripple">
+        <a href="/" title="NickXu">
+            <img src="https://user-images.githubusercontent.com/42164227/154855857-80db9178-d35f-4743-8e4b-63e6305c3317.jpg" alt="NickXu" alt="NickXu">
+        </a>
+    </div>
+    <div class="nexmoe-count">
+        <div><span>Articles</span>5</div>
+        <div><span>Tags</span>10</div>
+        <div><span>Categories</span>3</div>
+    </div>
+    <div class="nexmoe-list mdui-list" mdui-collapse="{accordion: true}">
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/" title="回到首页">
+            <i class="mdui-list-item-icon nexmoefont icon-home"></i>
+            <div class="mdui-list-item-content">
+                回到首页
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/archive.html" title="文章归档">
+            <i class="mdui-list-item-icon nexmoefont icon-container"></i>
+            <div class="mdui-list-item-content">
+                文章归档
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/about.html" title="关于博客">
+            <i class="mdui-list-item-icon nexmoefont icon-info-circle"></i>
+            <div class="mdui-list-item-content">
+                关于博客
+            </div>
+        </a>
+        
+        <a class="nexmoe-list-item mdui-list-item mdui-ripple false" href="/PY.html" title="我的朋友">
+            <i class="mdui-list-item-icon nexmoefont icon-unorderedlist"></i>
+            <div class="mdui-list-item-content">
+                我的朋友
+            </div>
+        </a>
+        
+    </div>
+    <aside id="nexmoe-sidebar">
+    
+    <div class="nexmoe-widget-wrap">
+    <div class="nexmoe-widget nexmoe-search">
+        
+            <form id="search_form">
+                <label><input class="st-default-search-input" id="search_value" name="q" type="search" placeholder="Search" style="
+                    font-size: 15px !important;
+                    height: 56px !important;
+                    background-image: none;
+                "></label>
+            </form>
+         
+    </div>
+</div>
+    
+    <div class="nexmoe-widget-wrap">
+    <div class="nexmoe-widget nexmoe-social">
+        <a class="mdui-ripple" href="https://github.com/wenzi7777" target="_blank" mdui-tooltip="{content: 'GitHub'}" style="color: rgb(25, 23, 23);background-color: rgba(25, 23, 23, .15);">
+            <i class="nexmoefont icon-github"></i>
+        </a>
+    </div>
+</div>
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Categories</h3>
+    <div class="nexmoe-widget">
+
+      <ul class="category-list">
+
+        
+
+
+        
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/前端/">前端</a>
+          <span class="category-list-count">2</span>
+        </li>
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/后端/">后端</a>
+          <span class="category-list-count">2</span>
+        </li>
+
+        
+
+        <li class="category-list-item">
+          <a class="category-list-link" href="/categories/和编程没关系的事情/">和编程没关系的事情</a>
+          <span class="category-list-count">1</span>
+        </li>
+
+        
+      </ul>
+
+    </div>
+  </div>
+
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <div id="randomtagcloud" class="nexmoe-widget tagcloud nexmoe-rainbow">
+      <a href="/tags/Electron/" style="font-size: 10px;">Electron</a> <a href="/tags/Node-js/" style="font-size: 10px;">Node.js</a> <a href="/tags/Nodejs/" style="font-size: 10px;">Nodejs</a> <a href="/tags/Proxy/" style="font-size: 10px;">Proxy</a> <a href="/tags/Vue/" style="font-size: 10px;">Vue</a> <a href="/tags/%E4%BD%BF%E7%94%A8Cloudflare/" style="font-size: 10px;">使用Cloudflare</a> <a href="/tags/%E5%9B%BD%E9%99%85%E5%8C%96/" style="font-size: 10px;">国际化</a> <a href="/tags/%E5%AD%A6%E4%B9%A0%E8%AE%B0%E5%BD%95/" style="font-size: 10px;">学习记录</a> <a href="/tags/%E6%95%B0%E6%8D%AE%E5%BA%93/" style="font-size: 10px;">数据库</a> <a href="/tags/%E9%AB%98%E7%A7%91%E6%8A%80/" style="font-size: 10px;">高科技</a>
+    </div>
+    
+  </div>
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Archive</h3>
+    <div class="nexmoe-widget">
+      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/">2022</a><span class="archive-list-count">5</span></li></ul>
+    </div>
+  </div>
+
+
+
+    
+    
+  <div class="nexmoe-widget-wrap">
+    <h3 class="nexmoe-widget-title">Recent Posts</h3>
+    <div class="nexmoe-widget">
+      <ul>
+        
+          <li>
+            <a href="/2022/10/17/blog%E5%A4%9A%E8%AF%AD%E8%A8%80%E8%AE%A1%E5%88%92/">blog多语言计划</a>
+          </li>
+        
+          <li>
+            <a href="/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/">使用Cloudflare Worker来进行Firebase代理</a>
+          </li>
+        
+          <li>
+            <a href="/2022/05/01/%E5%9C%A8Vue%E7%A8%8B%E5%BA%8F%E4%B8%AD%E4%BD%BF%E7%94%A8Electron%E6%A1%86%E6%9E%B6/">在Vue程式中使用Electron框架</a>
+          </li>
+        
+          <li>
+            <a href="/2022/04/13/%E8%BD%AC%E4%B9%89/">转义</a>
+          </li>
+        
+          <li>
+            <a href="/2022/02/21/%E7%94%A8css%E5%AE%9E%E7%8E%B0%E7%BD%91%E9%A1%B5%E9%AB%98%E6%96%AF%E6%A8%A1%E7%B3%8A%E8%83%8C%E6%99%AF/">用css实现网页高斯模糊特效</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+    
+</aside>
+    <div class="nexmoe-copyright">
+        &copy; 2022 NickXu
+        Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+        & <a href="https://github.com/theme-nexmoe/hexo-theme-nexmoe" target="_blank">Nexmoe</a>
+        <br>
+    </div>
+</div><!-- .nexmoe-drawer -->
+    </div>
+    <div id="nexmoe-content">
+        <div class="nexmoe-primary">
+            <div class="nexmoe-post">
+
+  <article>
+      
+          <div class="nexmoe-post-cover" style="padding-bottom: 66.66666666666666%;"> 
+              <img data-src="https://www.dmoe.cc/random.php" data-sizes="auto" alt="使用Cloudflare Worker来进行Firebase代理" class="lazyload">
+              <h1>使用Cloudflare Worker来进行Firebase代理</h1>
+          </div>
+      
+      
+      <div class="nexmoe-post-meta nexmoe-rainbow" style="margin:10px 0!important;">
+    <a><i class="nexmoefont icon-calendar-fill"></i>2022年07月19日</a>
+</div>
+
+      
+
+      <h2 id="使用Cloudflare-Worker代理Firebase链接"><a href="#使用Cloudflare-Worker代理Firebase链接" class="headerlink" title="使用Cloudflare Worker代理Firebase链接"></a>使用Cloudflare Worker代理Firebase链接</h2><br />
+
+<p><strong>最近有一个专案使用Firebase来存储用户们上传的图片档，但是Firebase在中国大陆是被防火长城阻挡的，因此中国大陆的使用者无法查看图片</strong></p>
+<br />
+
+
+<h3 id="于是，就有了本篇Blog"><a href="#于是，就有了本篇Blog" class="headerlink" title="于是，就有了本篇Blog"></a>于是，就有了本篇Blog</h3><br />
+
+<p><em><strong>这篇Blog会教你如何使用Cloudflare提供的免费的Worker服务，来建立一个Proxy，然后无论来自哪个地方的人都可以通过代理的连结正常访问Firebase的档案。</strong></em></p>
+<p><em><strong>顺带一提： 文章末尾有在下搭建好的代理连结，各位也可以使用在下的Proxy，免去自己搭建的麻烦！ ！</strong></em></p>
+<br />
+
+<h3 id="首先需要一个Cloudflare帐户，如果没有可以去注册一个"><a href="#首先需要一个Cloudflare帐户，如果没有可以去注册一个" class="headerlink" title="首先需要一个Cloudflare帐户，如果没有可以去注册一个"></a>首先需要一个Cloudflare帐户，如果没有可以去注册一个</h3><br />
+
+<p><strong>-&gt; 0、 <a target="_blank" rel="noopener" href="https://dash.cloudflare.com/">Cloudflare官方网站的连结</a></strong></p>
+<br />
+
+<p><strong>-&gt; 1、登入后，进入你的控制台</strong></p>
+<br />
+
+<p><strong>-&gt; 2、选择左边的Worker</strong><br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/179679279-61076fd1-1206-4ed7-bf91-f96dc326e12b.png" alt="示例图 2/0" class="lazyload"></p>
+<br />
+
+<p><strong>-&gt; 3、再点选「建立服务」</strong><br><em><strong>注意这里选择「Http处理常式」即可</strong></em><br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/179679864-79ea1846-376e-4a2f-9878-a7a21bbb7e28.png" alt="示例图 3/0" class="lazyload"></p>
+<br />
+
+<p><em><strong>-&gt; 4、点选「快速编辑」</strong></em><br><em><strong>！我们不使用Cli进行编辑，因为这属于简单的任务，使用Cli反而浪费时间</strong></em><br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/179680200-7d7d6531-712a-48de-b425-168057b3233e.png" alt="示例图 4/0" class="lazyload"></p>
+<br />
+
+<p><strong>-&gt; 5、开始编写代理服务</strong><br><em><strong>！简单介绍一下什么是Cloudflare Worker</strong></em><br>***Cloudflare Worker其实是Cloudflare提供的一个极其轻量的云端伺服器，它的基本功能就是能够接受请求，进行处理后返回数据&#x2F;网页等等资源。 ***<br>***Cloudflare Worker是免费使用的（免费计画），并且大多数情况下，免费计画就已经能够满足我们的大部分需求。 ***<br><img data-fancybox="gallery" data-sizes="auto" data-src="https://user-images.githubusercontent.com/42164227/179680931-c8ec70c4-ee21-46a8-82c2-f30fe11473c4.png" alt="示例图 5/0" class="lazyload"></p>
+<br />
+
+<p><strong>-&gt; 6、能够透过Worker访问被封锁的Firebase的原理</strong><br>***上文提到，Firebase在中国大陆被封锁。但是Worker并未被封锁，并且Worker能够正常访问Firebase，因此就可以实现以下逻辑。 ***<br><em><strong>使用者透过向Worker发起请求（请求）-&gt; Worker接受请求，并读取请求内需要代理访问的地址 -&gt; Worker访问地址得到资源 -&gt; 返回给来源</strong></em></p>
+<br />
+
+<p><strong>-&gt; 7、源代码及部分</strong><br>***代码源自网路，对于本专案的需求，在下进行了更改适配。 ***</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br><span class="line">261</span><br><span class="line">262</span><br><span class="line">263</span><br><span class="line">264</span><br><span class="line">265</span><br><span class="line">266</span><br><span class="line">267</span><br><span class="line">268</span><br><span class="line">269</span><br><span class="line">270</span><br><span class="line">271</span><br><span class="line">272</span><br><span class="line">273</span><br><span class="line">274</span><br><span class="line">275</span><br><span class="line">276</span><br><span class="line">277</span><br><span class="line">278</span><br><span class="line">279</span><br><span class="line">280</span><br><span class="line">281</span><br><span class="line">282</span><br><span class="line">283</span><br><span class="line">284</span><br><span class="line">285</span><br><span class="line">286</span><br><span class="line">287</span><br><span class="line">288</span><br><span class="line">289</span><br><span class="line">290</span><br><span class="line">291</span><br><span class="line">292</span><br><span class="line">293</span><br><span class="line">294</span><br><span class="line">295</span><br><span class="line">296</span><br><span class="line">297</span><br><span class="line">298</span><br><span class="line">299</span><br><span class="line">300</span><br><span class="line">301</span><br><span class="line">302</span><br><span class="line">303</span><br><span class="line">304</span><br><span class="line">305</span><br><span class="line">306</span><br><span class="line">307</span><br><span class="line">308</span><br><span class="line">309</span><br><span class="line">310</span><br><span class="line">311</span><br><span class="line">312</span><br><span class="line">313</span><br><span class="line">314</span><br><span class="line">315</span><br><span class="line">316</span><br><span class="line">317</span><br><span class="line">318</span><br><span class="line">319</span><br><span class="line">320</span><br><span class="line">321</span><br><span class="line">322</span><br><span class="line">323</span><br><span class="line">324</span><br><span class="line">325</span><br><span class="line">326</span><br><span class="line">327</span><br><span class="line">328</span><br><span class="line">329</span><br><span class="line">330</span><br><span class="line">331</span><br><span class="line">332</span><br><span class="line">333</span><br><span class="line">334</span><br><span class="line">335</span><br><span class="line">336</span><br><span class="line">337</span><br><span class="line">338</span><br><span class="line">339</span><br><span class="line">340</span><br><span class="line">341</span><br><span class="line">342</span><br><span class="line">343</span><br><span class="line">344</span><br><span class="line">345</span><br><span class="line">346</span><br><span class="line">347</span><br><span class="line">348</span><br><span class="line">349</span><br><span class="line">350</span><br><span class="line">351</span><br><span class="line">352</span><br><span class="line">353</span><br><span class="line">354</span><br><span class="line">355</span><br><span class="line">356</span><br><span class="line">357</span><br><span class="line">358</span><br><span class="line">359</span><br><span class="line">360</span><br><span class="line">361</span><br><span class="line">362</span><br><span class="line">363</span><br><span class="line">364</span><br><span class="line">365</span><br><span class="line">366</span><br><span class="line">367</span><br><span class="line">368</span><br><span class="line">369</span><br><span class="line">370</span><br><span class="line">371</span><br><span class="line">372</span><br><span class="line">373</span><br><span class="line">374</span><br><span class="line">375</span><br><span class="line">376</span><br><span class="line">377</span><br><span class="line">378</span><br><span class="line">379</span><br><span class="line">380</span><br><span class="line">381</span><br><span class="line">382</span><br><span class="line">383</span><br><span class="line">384</span><br><span class="line">385</span><br><span class="line">386</span><br><span class="line">387</span><br><span class="line">388</span><br><span class="line">389</span><br><span class="line">390</span><br><span class="line">391</span><br><span class="line">392</span><br><span class="line">393</span><br><span class="line">394</span><br><span class="line">395</span><br><span class="line">396</span><br><span class="line">397</span><br><span class="line">398</span><br><span class="line">399</span><br><span class="line">400</span><br><span class="line">401</span><br><span class="line">402</span><br><span class="line">403</span><br><span class="line">404</span><br><span class="line">405</span><br><span class="line">406</span><br><span class="line">407</span><br><span class="line">408</span><br><span class="line">409</span><br><span class="line">410</span><br><span class="line">411</span><br><span class="line">412</span><br><span class="line">413</span><br><span class="line">414</span><br><span class="line">415</span><br><span class="line">416</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="title function_">addEventListener</span>(<span class="string">&quot;fetch&quot;</span>, <span class="function"><span class="params">event</span> =&gt;</span> &#123;</span><br><span class="line">  event.<span class="title function_">passThroughOnException</span>();</span><br><span class="line">  <span class="keyword">if</span> (event.<span class="property">request</span>.<span class="property">method</span> === <span class="string">&#x27;GET&#x27;</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> url = <span class="keyword">new</span> <span class="title function_">URL</span>(event.<span class="property">request</span>.<span class="property">url</span>);</span><br><span class="line">    <span class="keyword">const</span> accept = event.<span class="property">request</span>.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&#x27;Accept&#x27;</span>);</span><br><span class="line">    <span class="keyword">if</span> (url.<span class="property">pathname</span>.<span class="title function_">startsWith</span>(<span class="string">&#x27;/firebasestorage.googleapis.com/&#x27;</span>)) &#123;</span><br><span class="line">      <span class="comment">// 將請求轉發給原伺服器</span></span><br><span class="line">      event.<span class="title function_">respondWith</span>(<span class="title function_">proxyRequest</span>(<span class="string">&#x27;https:/&#x27;</span> + url.<span class="property">pathname</span> + url.<span class="property">search</span>,</span><br><span class="line">                                     event.<span class="property">request</span>));</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (accept &amp;&amp; (accept.<span class="title function_">indexOf</span>(<span class="string">&#x27;text/html&#x27;</span>) &gt;= <span class="number">0</span> || accept.<span class="title function_">indexOf</span>(<span class="string">&#x27;text/css&#x27;</span>) &gt;= <span class="number">0</span>)) &#123;</span><br><span class="line">      <span class="keyword">if</span> (url.<span class="property">pathname</span>.<span class="title function_">startsWith</span>(<span class="string">&#x27;/firebasestorage.googleapis.com/&#x27;</span>)) &#123;</span><br><span class="line">        event.<span class="title function_">respondWith</span>(<span class="title function_">proxyStylesheet</span>(<span class="string">&#x27;https:/&#x27;</span> + url.<span class="property">pathname</span> + url.<span class="property">search</span>,</span><br><span class="line">                                          event.<span class="property">request</span>));</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        event.<span class="title function_">respondWith</span>(<span class="title function_">processRequest</span>(event.<span class="property">request</span>, event));</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">const</span> <span class="variable constant_">VALID_CHARSETS</span> = [<span class="string">&#x27;utf-8&#x27;</span>, <span class="string">&#x27;utf8&#x27;</span>, <span class="string">&#x27;iso-8859-1&#x27;</span>, <span class="string">&#x27;us-ascii&#x27;</span>];</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">proxyRequest</span>(<span class="params">url, request</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> init = &#123;</span><br><span class="line">    <span class="attr">method</span>: request.<span class="property">method</span>,</span><br><span class="line">    <span class="attr">headers</span>: &#123;&#125;</span><br><span class="line">  &#125;;</span><br><span class="line">  <span class="comment">// 只允許這些Headers</span></span><br><span class="line">  <span class="keyword">const</span> proxyHeaders = [<span class="string">&quot;Accept&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;Accept-Encoding&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;Accept-Language&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;Referer&quot;</span>,</span><br><span class="line">                        <span class="string">&quot;User-Agent&quot;</span>];</span><br><span class="line">  <span class="keyword">for</span> (<span class="keyword">let</span> name <span class="keyword">of</span> proxyHeaders) &#123;</span><br><span class="line">    <span class="keyword">let</span> value = request.<span class="property">headers</span>.<span class="title function_">get</span>(name);</span><br><span class="line">    <span class="keyword">if</span> (value) &#123;</span><br><span class="line">      init.<span class="property">headers</span>[name] = value;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// 使用源ip新建 X-Forwarded-For 請求頭</span></span><br><span class="line">  <span class="keyword">const</span> clientAddr = request.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&#x27;cf-connecting-ip&#x27;</span>);</span><br><span class="line">  <span class="keyword">if</span> (clientAddr) &#123;</span><br><span class="line">    init.<span class="property">headers</span>[<span class="string">&#x27;X-Forwarded-For&#x27;</span>] = clientAddr;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(url, init);</span><br><span class="line">  <span class="keyword">if</span> (response) &#123;</span><br><span class="line">    <span class="keyword">const</span> responseHeaders = [<span class="string">&quot;Content-Type&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;Cache-Control&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;Expires&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;Accept-Ranges&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;Date&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;Last-Modified&quot;</span>,</span><br><span class="line">                             <span class="string">&quot;ETag&quot;</span>];</span><br><span class="line">    <span class="keyword">let</span> responseInit = &#123;<span class="attr">status</span>: response.<span class="property">status</span>,</span><br><span class="line">                        <span class="attr">statusText</span>: response.<span class="property">statusText</span>,</span><br><span class="line">                        <span class="attr">headers</span>: &#123;&#125;&#125;;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">let</span> name <span class="keyword">of</span> responseHeaders) &#123;</span><br><span class="line">      <span class="keyword">let</span> value = response.<span class="property">headers</span>.<span class="title function_">get</span>(name);</span><br><span class="line">      <span class="keyword">if</span> (value) &#123;</span><br><span class="line">        responseInit.<span class="property">headers</span>[name] = value;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    responseInit.<span class="property">headers</span>[<span class="string">&#x27;X-Content-Type-Options&#x27;</span>] = <span class="string">&quot;nosniff&quot;</span>;</span><br><span class="line">    <span class="keyword">const</span> newResponse = <span class="keyword">new</span> <span class="title class_">Response</span>(response.<span class="property">body</span>, responseInit);</span><br><span class="line">    <span class="keyword">return</span> newResponse;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">proxyStylesheet</span>(<span class="params">url, request</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> css = <span class="keyword">await</span> <span class="title function_">fetchCSS</span>(url, request)</span><br><span class="line">  <span class="keyword">if</span> (css) &#123;</span><br><span class="line">    <span class="keyword">const</span> responseInit = &#123;<span class="attr">headers</span>: &#123;</span><br><span class="line">      <span class="string">&quot;Content-Type&quot;</span>: <span class="string">&quot;text/css; charset=utf-8&quot;</span>,</span><br><span class="line">      <span class="string">&quot;Cache-Control&quot;</span>: <span class="string">&quot;private, max-age=86400, stale-while-revalidate=604800&quot;</span></span><br><span class="line">    &#125;&#125;;</span><br><span class="line">    <span class="keyword">const</span> newResponse = <span class="keyword">new</span> <span class="title class_">Response</span>(css, responseInit);</span><br><span class="line">    <span class="keyword">return</span> newResponse;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="title function_">proxyRequest</span>(url, request);</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">processRequest</span>(<span class="params">request, event</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(request);</span><br><span class="line">  <span class="keyword">if</span> (response &amp;&amp; response.<span class="property">status</span> === <span class="number">200</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> contentType = response.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&quot;content-type&quot;</span>);</span><br><span class="line">    <span class="keyword">if</span> (contentType &amp;&amp; contentType.<span class="title function_">indexOf</span>(<span class="string">&quot;text/html&quot;</span>) !== -<span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">await</span> <span class="title function_">processHtmlResponse</span>(response, event.<span class="property">request</span>, event);</span><br><span class="line">    &#125; <span class="keyword">else</span> <span class="keyword">if</span> (contentType &amp;&amp; contentType.<span class="title function_">indexOf</span>(<span class="string">&quot;text/css&quot;</span>) !== -<span class="number">1</span>) &#123;</span><br><span class="line">      <span class="keyword">return</span> <span class="keyword">await</span> <span class="title function_">processStylesheetResponse</span>(response, event.<span class="property">request</span>, event);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> response;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">processHtmlResponse</span>(<span class="params">response, request, event</span>) &#123;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> contentType = response.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&quot;content-type&quot;</span>);</span><br><span class="line">  <span class="keyword">const</span> charsetRegex = <span class="regexp">/charset\s*=\s*([^\s;]+)/mgi</span>;</span><br><span class="line">  <span class="keyword">const</span> match = charsetRegex.<span class="title function_">exec</span>(contentType);</span><br><span class="line">  <span class="keyword">if</span> (match !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">let</span> charset = match[<span class="number">1</span>].<span class="title function_">toLowerCase</span>();</span><br><span class="line">    <span class="keyword">if</span> (!<span class="variable constant_">VALID_CHARSETS</span>.<span class="title function_">includes</span>(charset)) &#123;</span><br><span class="line">      <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> embedStylesheet = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">let</span> csp = response.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&quot;Content-Security-Policy&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> (csp) &#123;</span><br><span class="line">    <span class="keyword">let</span> ok = <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">let</span> cspRule = <span class="literal">null</span>;</span><br><span class="line">    <span class="keyword">const</span> styleRegex = <span class="regexp">/style-src[^;]*/gmi</span>;</span><br><span class="line">    <span class="keyword">let</span> match = styleRegex.<span class="title function_">exec</span>(csp);</span><br><span class="line">    <span class="keyword">if</span> (match !== <span class="literal">null</span>) &#123;</span><br><span class="line">      cspRule = match[<span class="number">0</span>];</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> defaultRegex = <span class="regexp">/default-src[^;]*/gmi</span>;</span><br><span class="line">      <span class="keyword">let</span> match = defaultRegex.<span class="title function_">exec</span>(csp);</span><br><span class="line">      <span class="keyword">if</span> (match !== <span class="literal">null</span>) &#123;</span><br><span class="line">        cspRule = match[<span class="number">0</span>];</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (cspRule !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (cspRule.<span class="title function_">indexOf</span>(<span class="string">&quot;&#x27;unsafe-inline&#x27;&quot;</span>) &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        ok = <span class="literal">true</span>;</span><br><span class="line">        embedStylesheet = <span class="literal">true</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> <span class="keyword">if</span> (cspRule.<span class="title function_">indexOf</span>(<span class="string">&quot;&#x27;self&#x27;&quot;</span>) &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">        ok = <span class="literal">true</span>;</span><br><span class="line">        embedStylesheet = <span class="literal">false</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  </span><br><span class="line">    <span class="keyword">if</span> (!ok) &#123;</span><br><span class="line">      <span class="keyword">return</span> response;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> &#123; readable, writable &#125; = <span class="keyword">new</span> <span class="title class_">TransformStream</span>();</span><br><span class="line">  <span class="keyword">const</span> newResponse = <span class="keyword">new</span> <span class="title class_">Response</span>(readable, response);</span><br><span class="line">  <span class="title function_">modifyHtmlStream</span>(response.<span class="property">body</span>, writable, request, event, embedStylesheet);</span><br><span class="line">  <span class="keyword">return</span> newResponse;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">processStylesheetResponse</span>(<span class="params">response, request, event</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> body = response.<span class="property">body</span>;</span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    body = <span class="keyword">await</span> response.<span class="title function_">text</span>();</span><br><span class="line">    <span class="keyword">const</span> fontCSSRegex = <span class="regexp">/@import\s*(url\s*)?[\(&#x27;&quot;\s]+((https?:)?\/\/fonts.googleapis.com\/css[^&#x27;&quot;\)]+)[\s&#x27;&quot;\)]+\s*;/mgi</span>;</span><br><span class="line">    <span class="keyword">let</span> match = fontCSSRegex.<span class="title function_">exec</span>(body);</span><br><span class="line">    <span class="keyword">while</span> (match !== <span class="literal">null</span>) &#123;</span><br><span class="line">      <span class="keyword">const</span> matchString = match[<span class="number">0</span>];</span><br><span class="line">      <span class="keyword">const</span> fontCSS = <span class="keyword">await</span> <span class="title function_">fetchCSS</span>(match[<span class="number">2</span>], request, event);</span><br><span class="line">      <span class="keyword">if</span> (fontCSS.<span class="property">length</span>) &#123;</span><br><span class="line">        body = body.<span class="title function_">split</span>(matchString).<span class="title function_">join</span>(fontCSS);</span><br><span class="line">        fontCSSRegex.<span class="property">lastIndex</span> -= matchString.<span class="property">length</span> - fontCSS.<span class="property">length</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      match = fontCSSRegex.<span class="title function_">exec</span>(body);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">catch</span> (e) &#123;&#125;</span><br><span class="line">  <span class="keyword">const</span> newResponse = <span class="keyword">new</span> <span class="title class_">Response</span>(body, response);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> newResponse;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">chunkContainsInvalidCharset</span>(<span class="params">chunk</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> invalid = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> charsetRegex = <span class="regexp">/&lt;\s*meta[^&gt;]+charset\s*=\s*[&#x27;&quot;]([^&#x27;&quot;]*)[&#x27;&quot;][^&gt;]*&gt;/mgi</span>;</span><br><span class="line">  <span class="keyword">const</span> charsetMatch = charsetRegex.<span class="title function_">exec</span>(chunk);</span><br><span class="line">  <span class="keyword">if</span> (charsetMatch) &#123;</span><br><span class="line">    <span class="keyword">const</span> docCharset = charsetMatch[<span class="number">1</span>].<span class="title function_">toLowerCase</span>();</span><br><span class="line">    <span class="keyword">if</span> (!<span class="variable constant_">VALID_CHARSETS</span>.<span class="title function_">includes</span>(docCharset)) &#123;</span><br><span class="line">      invalid = <span class="literal">true</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">const</span> contentTypeRegex = <span class="regexp">/&lt;\s*meta[^&gt;]+http-equiv\s*=\s*[&#x27;&quot;]\s*content-type[^&gt;]*&gt;/mgi</span>;</span><br><span class="line">  <span class="keyword">const</span> contentTypeMatch = contentTypeRegex.<span class="title function_">exec</span>(chunk);</span><br><span class="line">  <span class="keyword">if</span> (contentTypeMatch) &#123;</span><br><span class="line">    <span class="keyword">const</span> metaTag = contentTypeMatch[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">const</span> metaRegex = <span class="regexp">/charset\s*=\s*([^\s&quot;]*)/mgi</span>;</span><br><span class="line">    <span class="keyword">const</span> metaMatch = metaRegex.<span class="title function_">exec</span>(metaTag);</span><br><span class="line">    <span class="keyword">if</span> (metaMatch) &#123;</span><br><span class="line">      <span class="keyword">const</span> charset = metaMatch[<span class="number">1</span>].<span class="title function_">toLowerCase</span>();</span><br><span class="line">      <span class="keyword">if</span> (!<span class="variable constant_">VALID_CHARSETS</span>.<span class="title function_">includes</span>(charset)) &#123;</span><br><span class="line">        invalid = <span class="literal">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> invalid;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">modifyHtmlStream</span>(<span class="params">readable, writable, request, event, embedStylesheet</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> reader = readable.<span class="title function_">getReader</span>();</span><br><span class="line">  <span class="keyword">const</span> writer = writable.<span class="title function_">getWriter</span>();</span><br><span class="line">  <span class="keyword">const</span> encoder = <span class="keyword">new</span> <span class="title class_">TextEncoder</span>();</span><br><span class="line">  <span class="keyword">let</span> decoder = <span class="keyword">new</span> <span class="title class_">TextDecoder</span>(<span class="string">&quot;utf-8&quot;</span>, &#123;<span class="attr">fatal</span>: <span class="literal">true</span>&#125;);</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> firstChunk = <span class="literal">true</span>;</span><br><span class="line">  <span class="keyword">let</span> unsupportedCharset = <span class="literal">false</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> partial = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  <span class="keyword">let</span> content = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">for</span>(;;) &#123;</span><br><span class="line">      <span class="keyword">const</span> &#123; done, value &#125; = <span class="keyword">await</span> reader.<span class="title function_">read</span>();</span><br><span class="line">      <span class="keyword">if</span> (done) &#123;</span><br><span class="line">        <span class="keyword">if</span> (partial.<span class="property">length</span>) &#123;</span><br><span class="line">          partial = <span class="keyword">await</span> <span class="title function_">modifyHtmlChunk</span>(partial, request, event, embedStylesheet);</span><br><span class="line">          <span class="keyword">await</span> writer.<span class="title function_">write</span>(encoder.<span class="title function_">encode</span>(partial));</span><br><span class="line">          partial = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">let</span> chunk = <span class="literal">null</span>;</span><br><span class="line">      <span class="keyword">if</span> (unsupportedCharset) &#123;</span><br><span class="line">        <span class="keyword">await</span> writer.<span class="title function_">write</span>(value);</span><br><span class="line">        <span class="keyword">continue</span>;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          chunk = decoder.<span class="title function_">decode</span>(value, &#123;<span class="attr">stream</span>:<span class="literal">true</span>&#125;);</span><br><span class="line">        &#125; <span class="keyword">catch</span> (e) &#123;</span><br><span class="line">          unsupportedCharset = <span class="literal">true</span>;</span><br><span class="line">          <span class="keyword">if</span> (partial.<span class="property">length</span>) &#123;</span><br><span class="line">            <span class="keyword">await</span> writer.<span class="title function_">write</span>(encoder.<span class="title function_">encode</span>(partial));</span><br><span class="line">            partial = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="keyword">await</span> writer.<span class="title function_">write</span>(value);</span><br><span class="line">          <span class="keyword">continue</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      <span class="keyword">try</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (firstChunk) &#123;</span><br><span class="line">          firstChunk = <span class="literal">false</span>;</span><br><span class="line">          <span class="keyword">if</span> (<span class="title function_">chunkContainsInvalidCharset</span>(chunk)) &#123;</span><br><span class="line">            <span class="comment">// switch to passthrough</span></span><br><span class="line">            unsupportedCharset = <span class="literal">true</span>;</span><br><span class="line">            <span class="keyword">if</span> (partial.<span class="property">length</span>) &#123;</span><br><span class="line">              <span class="keyword">await</span> writer.<span class="title function_">write</span>(encoder.<span class="title function_">encode</span>(partial));</span><br><span class="line">              partial = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">await</span> writer.<span class="title function_">write</span>(value);</span><br><span class="line">            <span class="keyword">continue</span>;</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        content = partial + chunk;</span><br><span class="line">        partial = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">        <span class="keyword">const</span> linkPos = content.<span class="title function_">lastIndexOf</span>(<span class="string">&#x27;&lt;link&#x27;</span>);</span><br><span class="line">        <span class="keyword">if</span> (linkPos &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">          <span class="keyword">const</span> linkClose = content.<span class="title function_">indexOf</span>(<span class="string">&#x27;/&gt;&#x27;</span>, linkPos);</span><br><span class="line">          <span class="keyword">if</span> (linkClose === -<span class="number">1</span>) &#123;</span><br><span class="line">            partial = content.<span class="title function_">slice</span>(linkPos);</span><br><span class="line">            content = content.<span class="title function_">slice</span>(<span class="number">0</span>, linkPos);</span><br><span class="line">          &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (content.<span class="property">length</span>) &#123;</span><br><span class="line">          content = <span class="keyword">await</span> <span class="title function_">modifyHtmlChunk</span>(content, request, event, embedStylesheet);</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">catch</span> (e) &#123;&#125;</span><br><span class="line">      <span class="keyword">if</span> (content.<span class="property">length</span>) &#123;</span><br><span class="line">        <span class="keyword">await</span> writer.<span class="title function_">write</span>(encoder.<span class="title function_">encode</span>(content));</span><br><span class="line">        content = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125; <span class="keyword">catch</span>(e) &#123;&#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">try</span> &#123;</span><br><span class="line">    <span class="keyword">await</span> writer.<span class="title function_">close</span>();</span><br><span class="line">  &#125; <span class="keyword">catch</span>(e) &#123;&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">modifyHtmlChunk</span>(<span class="params">content, request, event, embedStylesheet</span>) &#123;</span><br><span class="line">  <span class="keyword">const</span> fontCSSRegex = <span class="regexp">/&lt;link\s+[^&gt;]*href\s*=\s*[&#x27;&quot;]((https?:)?\/\/fonts.googleapis.com\/css[^&#x27;&quot;]+)[^&gt;]*&gt;/mgi</span>;</span><br><span class="line">  <span class="keyword">let</span> match = fontCSSRegex.<span class="title function_">exec</span>(content);</span><br><span class="line">  <span class="keyword">while</span> (match !== <span class="literal">null</span>) &#123;</span><br><span class="line">    <span class="keyword">const</span> matchString = match[<span class="number">0</span>];</span><br><span class="line">    <span class="keyword">if</span> (matchString.<span class="title function_">indexOf</span>(<span class="string">&#x27;stylesheet&#x27;</span>) &gt;= <span class="number">0</span>) &#123;</span><br><span class="line">      <span class="keyword">if</span> (embedStylesheet) &#123;</span><br><span class="line">        <span class="keyword">const</span> fontCSS = <span class="keyword">await</span> <span class="title function_">fetchCSS</span>(match[<span class="number">1</span>], request, event);</span><br><span class="line">        <span class="keyword">if</span> (fontCSS.<span class="property">length</span>) &#123;</span><br><span class="line">          <span class="comment">// See if there is a media type on the link tag</span></span><br><span class="line">          <span class="keyword">let</span> mediaStr = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">          <span class="keyword">const</span> mediaMatch = matchString.<span class="title function_">match</span>(<span class="regexp">/media\s*=\s*[&#x27;&quot;][^&#x27;&quot;]*[&#x27;&quot;]/mig</span>);</span><br><span class="line">          <span class="keyword">if</span> (mediaMatch) &#123;</span><br><span class="line">            mediaStr = <span class="string">&#x27; &#x27;</span> + mediaMatch[<span class="number">0</span>];</span><br><span class="line">          &#125;</span><br><span class="line">          <span class="comment">// Replace the actual css</span></span><br><span class="line">          <span class="keyword">let</span> cssString = <span class="string">&quot;&lt;style&quot;</span> + mediaStr + <span class="string">&quot;&gt;\n&quot;</span>;</span><br><span class="line">          cssString += fontCSS;</span><br><span class="line">          cssString += <span class="string">&quot;\n&lt;/style&gt;\n&quot;</span>;</span><br><span class="line">          content = content.<span class="title function_">split</span>(matchString).<span class="title function_">join</span>(cssString);</span><br><span class="line">          fontCSSRegex.<span class="property">lastIndex</span> -= matchString.<span class="property">length</span> - cssString.<span class="property">length</span>;</span><br><span class="line">        &#125;</span><br><span class="line">      &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="comment">// Rewrite the URL to proxy it through the origin</span></span><br><span class="line">        <span class="keyword">let</span> originalUrl = match[<span class="number">1</span>];</span><br><span class="line">        <span class="keyword">let</span> startPos = originalUrl.<span class="title function_">indexOf</span>(<span class="string">&#x27;/fonts.googleapis.com&#x27;</span>);</span><br><span class="line">        <span class="keyword">let</span> newUrl = originalUrl.<span class="title function_">substr</span>(startPos);</span><br><span class="line">        <span class="keyword">let</span> newString = matchString.<span class="title function_">split</span>(originalUrl).<span class="title function_">join</span>(newUrl);</span><br><span class="line">        content = content.<span class="title function_">split</span>(matchString).<span class="title function_">join</span>(newString);</span><br><span class="line">        fontCSSRegex.<span class="property">lastIndex</span> -= matchString.<span class="property">length</span> - newString.<span class="property">length</span>;</span><br><span class="line">      &#125;</span><br><span class="line">      match = fontCSSRegex.<span class="title function_">exec</span>(content);</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> content;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">var</span> <span class="variable constant_">FONT_CACHE</span> = &#123;&#125;;</span><br><span class="line"></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">function</span> <span class="title function_">fetchCSS</span>(<span class="params">url, request</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> fontCSS = <span class="string">&quot;&quot;</span>;</span><br><span class="line">  <span class="keyword">if</span> (url.<span class="title function_">startsWith</span>(<span class="string">&#x27;/&#x27;</span>))</span><br><span class="line">    url = <span class="string">&#x27;https:&#x27;</span> + url;</span><br><span class="line">  <span class="keyword">const</span> userAgent = request.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&#x27;user-agent&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> clientAddr = request.<span class="property">headers</span>.<span class="title function_">get</span>(<span class="string">&#x27;cf-connecting-ip&#x27;</span>);</span><br><span class="line">  <span class="keyword">const</span> browser = <span class="title function_">getCacheKey</span>(userAgent);</span><br><span class="line">  <span class="keyword">const</span> cacheKey = browser ? url + <span class="string">&#x27;&amp;&#x27;</span> + browser : url;</span><br><span class="line">  <span class="keyword">const</span> cacheKeyRequest = <span class="keyword">new</span> <span class="title class_">Request</span>(cacheKey);</span><br><span class="line">  <span class="keyword">let</span> cache = <span class="literal">null</span>;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> foundInCache = <span class="literal">false</span>;</span><br><span class="line">  <span class="keyword">if</span> (cacheKey <span class="keyword">in</span> <span class="variable constant_">FONT_CACHE</span>) &#123;</span><br><span class="line">    <span class="comment">// hit in the memory cache</span></span><br><span class="line">    fontCSS = <span class="variable constant_">FONT_CACHE</span>[cacheKey];</span><br><span class="line">    foundInCache = <span class="literal">true</span>;</span><br><span class="line">  &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">    <span class="comment">// Try pulling it from the cache API (wrap it in case it&#x27;s not implemented)</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      cache = caches.<span class="property">default</span>;</span><br><span class="line">      <span class="keyword">let</span> response = <span class="keyword">await</span> cache.<span class="title function_">match</span>(cacheKeyRequest);</span><br><span class="line">      <span class="keyword">if</span> (response) &#123;</span><br><span class="line">        fontCSS = <span class="keyword">await</span> response.<span class="title function_">text</span>();</span><br><span class="line">        foundInCache = <span class="literal">true</span>;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span>(e) &#123;</span><br><span class="line">      <span class="comment">// Ignore the exception</span></span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> (!foundInCache) &#123;</span><br><span class="line">    <span class="keyword">let</span> headers = &#123;<span class="string">&#x27;Referer&#x27;</span>: request.<span class="property">url</span>&#125;;</span><br><span class="line">    <span class="keyword">if</span> (browser) &#123;</span><br><span class="line">      headers[<span class="string">&#x27;User-Agent&#x27;</span>] = userAgent;</span><br><span class="line">    &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">      headers[<span class="string">&#x27;User-Agent&#x27;</span>] = <span class="string">&quot;Mozilla/4.0 (compatible; MSIE 8.0; Windows NT 6.0; Trident/4.0)&quot;</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (clientAddr) &#123;</span><br><span class="line">      headers[<span class="string">&#x27;X-Forwarded-For&#x27;</span>] = clientAddr;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="keyword">const</span> response = <span class="keyword">await</span> <span class="title function_">fetch</span>(url, &#123;<span class="attr">headers</span>: headers&#125;);</span><br><span class="line">      <span class="keyword">if</span> (response &amp;&amp; response.<span class="property">status</span> === <span class="number">200</span>) &#123;</span><br><span class="line">        fontCSS = <span class="keyword">await</span> response.<span class="title function_">text</span>();</span><br><span class="line">        fontCSS = fontCSS.<span class="title function_">replace</span>(<span class="regexp">/(https?:)?\/\/fonts\.gstatic\.com\//mgi</span>, <span class="string">&#x27;/fonts.gstatic.com/&#x27;</span>);</span><br><span class="line">        <span class="variable constant_">FONT_CACHE</span>[cacheKey] = fontCSS;</span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">          <span class="keyword">if</span> (cache) &#123;</span><br><span class="line">            <span class="keyword">const</span> cacheResponse = <span class="keyword">new</span> <span class="title class_">Response</span>(fontCSS, &#123;<span class="attr">ttl</span>: <span class="number">86400</span>&#125;);</span><br><span class="line">            event.<span class="title function_">waitUntil</span>(cache.<span class="title function_">put</span>(cacheKeyRequest, cacheResponse));</span><br><span class="line">          &#125;</span><br><span class="line">        &#125; <span class="keyword">catch</span>(e) &#123;&#125;</span><br><span class="line">      &#125;</span><br><span class="line">    &#125; <span class="keyword">catch</span>(e) &#123;&#125;</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> fontCSS;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">function</span> <span class="title function_">getCacheKey</span>(<span class="params">userAgent</span>) &#123;</span><br><span class="line">  <span class="keyword">let</span> os = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  <span class="keyword">const</span> osRegex = <span class="regexp">/^[^(]*\(\s*(\w+)/mgi</span>;</span><br><span class="line">  <span class="keyword">let</span> match = osRegex.<span class="title function_">exec</span>(userAgent);</span><br><span class="line">  <span class="keyword">if</span> (match) &#123;</span><br><span class="line">    os = match[<span class="number">1</span>];</span><br><span class="line">  &#125;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">let</span> mobile = <span class="string">&#x27;&#x27;</span>;</span><br><span class="line">  <span class="keyword">if</span> (userAgent.<span class="title function_">match</span>(<span class="regexp">/Mobile/mgi</span>)) &#123;</span><br><span class="line">    mobile = <span class="string">&#x27;Mobile&#x27;</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> edgeRegex = <span class="regexp">/\s+Edge\/(\d+)/mgi</span>;</span><br><span class="line">  match = edgeRegex.<span class="title function_">exec</span>(userAgent);</span><br><span class="line">  <span class="keyword">if</span> (match) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;Edge&#x27;</span> + match[<span class="number">1</span>] + os + mobile;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> chromeRegex = <span class="regexp">/\s+Chrome\/(\d+)/mgi</span>;</span><br><span class="line">  match = chromeRegex.<span class="title function_">exec</span>(userAgent);</span><br><span class="line">  <span class="keyword">if</span> (match) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;Chrome&#x27;</span> + match[<span class="number">1</span>] + os + mobile;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> webkitRegex = <span class="regexp">/\s+AppleWebKit\/(\d+)/mgi</span>;</span><br><span class="line">  match = webkitRegex.<span class="title function_">exec</span>(userAgent.<span class="property">match</span>);</span><br><span class="line">  <span class="keyword">if</span> (match) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;WebKit&#x27;</span> + match[<span class="number">1</span>] + os + mobile;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">const</span> firefoxRegex = <span class="regexp">/\s+Firefox\/(\d+)/mgi</span>;</span><br><span class="line">  match = firefoxRegex.<span class="title function_">exec</span>(userAgent);</span><br><span class="line">  <span class="keyword">if</span> (match) &#123;</span><br><span class="line">    <span class="keyword">return</span> <span class="string">&#x27;Firefox&#x27;</span> + match[<span class="number">1</span>] + os + mobile;</span><br><span class="line">  &#125;</span><br><span class="line">  </span><br><span class="line">  <span class="keyword">return</span> <span class="literal">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<br />
+
+<p><strong>现在即可使用，方法是</strong><br><em><strong>例如我要访问<a target="_blank" rel="noopener" href="https://firebasestorage.googleapis.com/v0/b/mikuproject-e9478.appspot.com/o/mikuproject-files%2F404.png?alt=media&amp;token=40bb05e9-d925-48a4-b4f5-800a28153b92">https://firebasestorage.googleapis.com/v0/b/mikuproject-e9478.appspot.com/o/mikuproject-files%2F404.png?alt=media&amp;token=40bb05e9-d925-48a4-b4f5-800a28153b92</a></strong></em><br><em><strong>现在只要在连结的https:&#x2F;&#x2F;后，加上你的Worker的域名即可</strong></em><br><em><strong>更改后的连结变为<a target="_blank" rel="noopener" href="https://objectproxy.1205.moe/firebasestorage.googleapis.com/v0/b/mikuproject-e9478.appspot.com/o/mikuproject-files%2F404.png?alt=media&amp;token=40bb05e9-d925-48a4-b4f5-800a28153b92">https://objectproxy.1205.moe/firebasestorage.googleapis.com/v0/b/mikuproject-e9478.appspot.com/o/mikuproject-files%2F404.png?alt=media&amp;token=40bb05e9-d925-48a4-b4f5-800a28153b92</a></strong></em></p>
+<br />
+
+<h3 id="现成的作业"><a href="#现成的作业" class="headerlink" title="现成的作业"></a>现成的作业</h3><br />
+
+<p><strong>Worker: <a target="_blank" rel="noopener" href="https://objectproxy.1205.moe/">https://objectproxy.1205.moe/</a></strong></p>
+
+  </article>
+
+  
+      
+    <div class="nexmoe-post-copyright">
+        <strong>Author：</strong>NickXu<br>
+        <strong>Link：</strong><a href="https://www.1205.moe/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/" title="https:&#x2F;&#x2F;www.1205.moe&#x2F;2022&#x2F;07&#x2F;19&#x2F;%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86&#x2F;" target="_blank" rel="noopener">https:&#x2F;&#x2F;www.1205.moe&#x2F;2022&#x2F;07&#x2F;19&#x2F;%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86&#x2F;</a><br>
+        
+            <strong>版权声明：</strong>本文采用 <a href="https://creativecommons.org/licenses/by-nc-sa/3.0/cn/deed.zh" target="_blank">CC BY-NC-SA 3.0 CN</a> 协议进行许可
+        
+    </div>
+
+
+  
+  
+  <div class="nexmoe-post-meta nexmoe-rainbow">
+    
+        <a class="nexmoefont icon-appstore-fill -link" href="/categories/%E5%90%8E%E7%AB%AF/">后端</a>
+    
+    
+        <a class="nexmoefont icon-tag-fill -none-link" href="/tags/Node-js/" rel="tag">Node.js</a> <a class="nexmoefont icon-tag-fill -none-link" href="/tags/Proxy/" rel="tag">Proxy</a> <a class="nexmoefont icon-tag-fill -none-link" href="/tags/%E4%BD%BF%E7%94%A8Cloudflare/" rel="tag">使用Cloudflare</a>
+    
+</div>
+
+  
+      <div class="nexmoe-post-footer">
+          <section class="nexmoe-comment">
+    <script id="dsq-count-scr" src="https://nekoblog-1.disqus.com/count.js" async></script>
+<div id="disqus_thread"></div>
+<script>
+    var disqus_config = function () {
+        this.page.url = 'https://www.1205.moe/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/'; // Replace PAGE_URL with your page's canonical URL variable
+        this.page.identifier = 'https://www.1205.moe/2022/07/19/%E4%BD%BF%E7%94%A8Cloudflare%20Worker%E6%9D%A5%E8%BF%9B%E8%A1%8CFirebase%E4%BB%A3%E7%90%86/'; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+    };
+</script>
+<script id="disqus-thread-script">
+    (function() { // DON'T EDIT BELOW THIS LINE
+        var d = document;
+        var s = d.createElement('script');
+        s.src = '//nekoblog-1.disqus.com/embed.js';
+        s.setAttribute('data-timestamp', + new Date());
+        (d.head || d.body).appendChild(s);
+    })();
+</script>
+
+</section>
+      </div>
+  
+</div>
+            <div class="nexmoe-post-right">
+              <div class="nexmoe-fixed">
+                  <div class="nexmoe-tool"> 
+                    
+                      
+                    
+                      <a href="#nexmoe-content" class="toc-link" aria-label="回到頂部" title="top"><button class="mdui-fab mdui-ripple"><i class="nexmoefont icon-caret-top"></i></button></a>
+                  </div>
+              </div>
+            </div>
+        </div>
+    </div>
+     
+    <div id="nexmoe-search-space">
+        <div class="search-container">
+            <div class="search-header">
+                <div class="search-input-container">
+                    <input class="search-input" type="text" placeholder="Search" oninput="sinput();">
+                </div>
+                <a class="search-close" onclick="sclose();">×</a>
+            </div>
+            <div class="search-body"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/combine/npm/lazysizes@5.1.0/lazysizes.min.js,npm/mdui@0.4.3/dist/js/mdui.min.js?v=1"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script>
+
+ 
+
+<script async src="/js/app.js?v=1665996609905"></script>
+
+
+	<script async src="/js/search.js?v=1665996609905"></script>
+
+
+<script src="https://cdn.jsdelivr.net/npm/justifiedGallery@3.8.1/dist/js/jquery.justifiedGallery.min.js"></script>
+<script>
+	$(".justified-gallery").justifiedGallery({
+		rowHeight: 160,
+		margins: 10,
+	});
+</script>
+
+
+    
+    <!-- Google Analytics -->
+<script>
+    window.ga=window.ga||function(){(ga.q=ga.q||[]).push(arguments)};ga.l=+new Date;
+    ga('create', '3259021090', 'auto');
+    ga('send', 'pageview');
+</script>
+<script async src="https://www.google-analytics.com/analytics.js"></script>
+
+
+
+
+
+
+</body>
+
+</html>
